@@ -149,17 +149,6 @@ The repository includes a pinned Gradle wrapper. With JDK 25 available:
 
 The plugin JAR is written to `build/libs/TimberShift-1.2.0.jar`.
 
-## Verification status
-
-Version 1.2.0 has 43 automated tests covering detection, movement planning, trusted-tree state, world
-filters, activation, leaf scanning, neighboring-tree support, persistent leaves, and queue limits. The
-1.2.0 JAR also completed an enable, startup-banner, status, configuration reload, disable, and
-clean-shutdown smoke test on Paper 26.2 build 112.
-
-Full in-game behavior still needs testing on a representative server before production use. The
-[manual test plan](docs/MANUAL_TEST_PLAN.md) covers normal and unusual trees, protection plugins,
-concurrent chopping, chunk boundaries, reloads, and leaf drops.
-
 ## Reporting a problem
 
 For help or a version-support request, join the [TimberShift support server](https://discord.gg/VmQAzmYyvA).
