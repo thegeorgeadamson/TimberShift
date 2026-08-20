@@ -1,0 +1,34 @@
+name: TimberShift
+version: '${version}'
+main: io.github.georgetimbershift.timbershift.TimberShiftPlugin
+api-version: '26.2'
+description: Progressive, safe shift-down tree chopping.
+author: George
+
+commands:
+  timbershift:
+    description: Manage TimberShift.
+    usage: /timbershift [help|reload|toggle|status]
+    aliases: [ts]
+
+permissions:
+  timbershift.use:
+    description: Allows automatic TimberShift tree movement.
+    default: true
+  timbershift.toggle:
+    description: Allows a player to toggle TimberShift for themselves.
+    default: true
+  timbershift.command.reload:
+    description: Allows reloading TimberShift configuration.
+    default: op
+  timbershift.command.status:
+    description: Allows viewing TimberShift status.
+    default: true
+  timbershift.admin:
+    description: Grants all TimberShift permissions.
+    default: op
+    children:
+      timbershift.use: true
+      timbershift.toggle: true
+      timbershift.command.reload: true
+      timbershift.command.status: true

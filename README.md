@@ -1,251 +1,61 @@
-<div align="center">
-
 # TimberShift
 
-**A better way to chop trees in Minecraft.**
+TimberShift is a Minecraft server plugin that brings the remaining logs of a tree down as you chop it.
+It is deliberately not a tree-felling plugin: every log still has to be broken by a player.
 
-Trees shift down as you chop them, one block at a time.
+Break a reachable log near the base of a natural tree and the logs that can move safely shift down by
+one block. The original break, item drop, tool damage, enchantments, and statistics are left to
+Minecraft.
 
-[![Minecraft](https://img.shields.io/badge/Minecraft-26.2-62B47A)](#compatibility)
-[![Paper](https://img.shields.io/badge/Paper-26.2-blue)](#compatibility)
-[![Purpur](https://img.shields.io/badge/Purpur-26.2-9B59B6)](#compatibility)
-[![Java](https://img.shields.io/badge/Java-25-orange)](#compatibility)
-[![License](https://img.shields.io/badge/License-GPL--3.0-green)](LICENSE)
+## Requirements
 
-</div>
+- Minecraft Java Edition 26.2
+- Java 25
+- Paper 26.2, Purpur 26.2, or Spigot 26.2
 
----
-
-TimberShift makes chopping trees less annoying without turning it into an instant tree-felling mechanic.
-
-Break the bottom of a tree and the remaining logs shift down by one block. You still have to chop **every log yourself** — you just don't have to pillar into the leaves to reach the last few.
-
-```text id="v7htzq"
-        🌿🌿🌿
-      🌿🌿🌿🌿🌿
-          🪵
-          🪵
-          🪵
-      🧍  🪵  ← chop
-
-            ↓
-
-        🌿🌿🌿
-      🌿🌿🌿🌿🌿
-
-          🪵
-          🪵
-      🧍  🪵  ← keep chopping
-```
-
-<div align="center">
-
-### One block broken. One block harvested.
-
-</div>
-
-## Why TimberShift?
-
-I've always liked the convenience of tree-felling plugins, but most of them make chopping trees almost completely automatic. Break one log and the entire tree disappears.
-
-TimberShift takes a different approach.
-
-The actual chopping stays close to vanilla. Tool durability still matters, every log still needs to be broken, and you don't get an entire tree from a single swing.
-
-**TimberShift just brings the rest of the tree down as you work through it.**
-
----
-
-## Features
-
-- **Progressive tree shifting** — trees move down one block at a time
-- **Vanilla-style chopping** — every log still needs to be broken individually
-- **Normal drops & durability** — only the block you actually chop is harvested
-- **Smart tree detection** — avoids blindly treating every group of logs as a tree
-- **Large tree support** — handles branching trees and 2×2 trunks
-- **BlockData preservation** — moved logs keep their orientation and state
-- **Sneak bypass** — hold sneak to chop normally
-- **Fast leaf decay** — optional, local and configurable
-- **Player leaf protection** — persistent/player-placed leaves aren't fast-decayed
-- **No `randomTickSpeed` changes**
-- **Per-world control** — whitelist or blacklist worlds
-- **Per-player toggle**
-- **Protection friendly** — respects cancelled block-break events
-- **BentoBox / AOneBlock friendly**
-- **No required dependencies**
-
----
-
-## How it works
-
-There isn't anything special players need to learn.
-
-Walk up to a tree and chop it normally.
-
-When TimberShift recognises a valid tree, the remaining structure shifts down by one block after you break a log.
-
-```text id="gj47w3"
-START              CHOP #1             CHOP #2
-
-   🪵                  🪵
-   🪵                  🪵
-   🪵                  🪵
-🧍 🪵 ← chop        🧍 🪵 ← chop        🧍 🪵 ← chop
-```
-
-Keep chopping from roughly the same position until you're done.
-
-TimberShift **does not** harvest the shifted logs. They're real blocks that still need to be broken normally.
-
-### Want normal behaviour?
-
-Hold **sneak** while chopping.
-
-TimberShift will leave the tree alone and Minecraft handles the block normally.
-
----
-
-## Smart tree detection
-
-TimberShift doesn't use the usual:
-
-> *"It's a log, so it must be a tree."*
-
-Before anything moves, the plugin checks the structure and surrounding foliage to determine whether what you're chopping actually looks like a tree.
-
-It's designed to handle normal vanilla trees including:
-
-| | | |
-| --- | --- | --- |
-| Oak | Spruce | Birch |
-| Jungle | Acacia | Dark Oak |
-| Mangrove | Cherry | Pale Oak |
-
-Large trees, branches and 2×2 trunks are handled as well.
-
-Detection and movement are deliberately conservative. If TimberShift can't safely move something, it would rather leave it alone than decide your log cabin is a tree.
-
----
-
-## Fast leaf decay
-
-Fast leaf decay can optionally clean up the canopy after a tree has actually been harvested.
-
-```yaml id="t8zpmu"
-leaves:
-  fast-decay:
-    enabled: true
-```
-
-This system runs independently of Minecraft's random tick system.
-
-TimberShift **never changes**:
-
-```text id="dujglv"
-/gamerule randomTickSpeed
-```
-
-That means enabling fast leaf decay won't speed up crops, grass, fire, saplings or anything else that relies on random ticks.
-
-### Player-placed leaves
-
-Player-placed leaves are left alone.
-
-TimberShift checks the persistent state of leaves before accelerating their decay. Persistent leaves are never intentionally removed by the fast-decay system.
-
-Natural leaves are also checked again before they're removed. If a leaf is still supported by another nearby tree, TimberShift leaves it there.
-
----
+Paper and Purpur are the primary targets. TimberShift is compiled against the common Spigot API and
+does not use NMS, CraftBukkit internals, or a server-specific plugin loader.
 
 ## Installation
 
-### Requirements
-
-- Minecraft Java Edition **26.2**
-- Java **25**
-- Paper, Purpur or Spigot
-
-### Install
-
-1. Download the latest `TimberShift.jar` from **Releases**.
-2. Stop your server.
-3. Drop the JAR into your `plugins` directory.
-4. Start the server.
-
-That's it.
-
-```text id="0xmv55"
-server/
-├── plugins/
-│   └── TimberShift.jar
-└── ...
-```
-
-On first start, TimberShift creates:
-
-```text id="5i5u31"
-plugins/
-└── TimberShift/
-    └── config.yml
-```
+1. Download `TimberShift-1.1.0.jar` from the [latest release](../../releases/latest).
+2. Stop the server and place the JAR in its `plugins` directory.
+3. Start the server. TimberShift will create `plugins/TimberShift/config.yml`.
 
 No other plugins are required.
 
----
+## What it does
 
-## Compatibility
+- Moves eligible tree logs down progressively instead of harvesting a whole tree at once.
+- Preserves each moved log's block data, including its axis.
+- Handles straight trunks, branches, and 2x2 trees conservatively.
+- Uses bounded natural-tree detection to avoid treating every wooden structure as a tree.
+- Never replaces terrain or an unrelated block to complete a move.
+- Leaves the player's original block break to normal Minecraft mechanics.
+- Supports a sneak-to-bypass option, per-player toggles, and per-world allow/deny lists.
+- Observes cancelled block-break events and does nothing when the original break is denied.
+- Includes optional, locally scheduled fast leaf decay.
 
-| Platform | Version | Status |
-| :--- | :---: | :---: |
-| **Paper** | 26.2 | ✅ Supported |
-| **Purpur** | 26.2 | ✅ Supported |
-| **Spigot** | 26.2 | ✅ Supported |
-| **Java** | 25 | ✅ Required |
+If part of a tree cannot move safely, TimberShift leaves that part where it is. This is intentional: an
+unusual tree occasionally staying put is preferable to damaging a build.
 
-> [!NOTE]
-> Paper and Purpur are the primary development targets. TimberShift stays on the standard Bukkit/Spigot API where practical and avoids NMS and CraftBukkit internals.
+## Fast leaf decay
 
----
+Fast leaf decay is enabled by default. It only considers bounded candidates associated with a tree that
+TimberShift has already recognised.
 
-## Configuration
+Before removing a queued leaf, TimberShift checks the live block again. The leaf must still be natural,
+non-persistent, loaded, and unsupported by a nearby log. Persistent/player-placed leaves are never
+intentionally removed. A cancellable Bukkit `LeavesDecayEvent` is also fired before removal.
 
-TimberShift is designed to work well out of the box, but most of the behaviour you'd reasonably want to change is configurable.
+With `preserve-vanilla-drops` enabled, leaf removal uses the server's normal no-tool block loot path for
+applicable saplings, sticks, apples, and other drops. TimberShift does not apply shears or Fortune and
+does not maintain its own copy of Minecraft's loot tables.
 
-<details>
-<summary><strong>Example config.yml</strong></summary>
+The system uses one bounded central queue. It never changes or depends on `randomTickSpeed`, and it does
+not force-load chunks.
 
-<br>
-
-```yaml id="9cx0md"
-config-version: 1
-
-general:
-  enabled: true
-  debug: false
-
-activation:
-  require-axe: true
-  require-permission: true
-  sneak-bypasses: true
-
-worlds:
-  mode: BLACKLIST
-  list: []
-
-tree-detection:
-  require-natural-leaves: true
-
-  limits:
-    max-logs: 256
-    max-height: 48
-    max-horizontal-radius: 12
-    max-scanned-blocks: 1500
-
-movement:
-  blocks-per-chop: 1
-  abort-on-unloaded-chunk: true
-  preserve-block-data: true
-
+```yaml
 leaves:
   fast-decay:
     enabled: true
@@ -254,200 +64,75 @@ leaves:
     max-leaves-per-batch: 32
     max-leaves-per-tree: 512
     max-radius: 12
+    max-scanned-blocks: 2048
+    max-active-operations: 32
+    preserve-vanilla-drops: true
+    effects:
+      particles: true
+      sounds: false
 ```
 
-</details>
+## Configuration
 
-The generated configuration includes comments explaining each option.
+The generated [`config.yml`](src/main/resources/config.yml) documents every option. The main sections
+control activation, world filtering, tree-detection limits, movement, leaf decay, effects, and messages.
 
-After making changes, reload TimberShift with:
+Reload changes with:
 
-```text id="rmy54r"
+```text
 /timbershift reload
 ```
 
-There's no need to restart the server.
-
-> [!IMPORTANT]
-> Bukkit's `/reload` command isn't recommended. Use TimberShift's own reload command instead.
-
----
-
-## World control
-
-TimberShift can be enabled globally or restricted to specific worlds.
-
-### Blacklist
-
-Enable TimberShift everywhere except the listed worlds:
-
-```yaml id="6zckpb"
-worlds:
-  mode: BLACKLIST
-  list:
-    - lobby
-    - creative
-```
-
-### Whitelist
-
-Only enable TimberShift in the listed worlds:
-
-```yaml id="tjdgzu"
-worlds:
-  mode: WHITELIST
-  list:
-    - world
-    - oneblock_world
-```
-
-This is particularly useful on servers with multiple game modes.
-
----
+Use TimberShift's command rather than Bukkit's `/reload`. Pending accelerated leaf work is safely
+cleared when the configuration is reloaded.
 
 ## Commands
 
 | Command | Description |
 | --- | --- |
-| `/timbershift` | Show TimberShift information |
-| `/timbershift help` | Show available commands |
+| `/timbershift help` | Show command help |
 | `/timbershift toggle` | Toggle TimberShift for yourself |
-| `/timbershift status` | Show your current TimberShift status |
-| `/timbershift reload` | Reload the configuration |
+| `/timbershift status` | Show the current global, leaf-decay, and player state |
+| `/timbershift reload` | Reload `config.yml` |
 
-All commands are also available through the shorter `/ts` alias.
-
----
+`/ts` is available as a shorter alias.
 
 ## Permissions
 
 | Permission | Default | Description |
-| --- | :---: | --- |
-| `timbershift.use` | Everyone | Use TimberShift |
-| `timbershift.toggle` | Everyone | Toggle TimberShift |
-| `timbershift.command.status` | Everyone | View TimberShift status |
-| `timbershift.command.reload` | OP | Reload the configuration |
-| `timbershift.admin` | OP | Administrative permissions |
+| --- | --- | --- |
+| `timbershift.use` | Everyone | Use tree shifting |
+| `timbershift.toggle` | Everyone | Change your own toggle |
+| `timbershift.command.status` | Everyone | View status |
+| `timbershift.command.reload` | Operators | Reload configuration |
+| `timbershift.admin` | Operators | Grant all TimberShift permissions |
 
----
+## Building
 
-## BentoBox & AOneBlock
+The repository includes a pinned Gradle wrapper. With JDK 25 available:
 
-TimberShift works alongside BentoBox and AOneBlock without depending on either plugin.
-
-If BentoBox or another protection plugin cancels a block break, TimberShift doesn't use that attempted break to move the tree.
-
-That means island protection continues to decide what a player is actually allowed to break.
-
-For a dedicated OneBlock server, you can also restrict TimberShift to your AOneBlock worlds:
-
-```yaml id="s3yn8v"
-worlds:
-  mode: WHITELIST
-  list:
-    - oneblock_world
-```
-
----
-
-## Performance & safety
-
-Minecraft trees can get surprisingly weird, so TimberShift puts hard limits around tree detection and movement.
-
-It doesn't perform unlimited searches through connected blocks and won't force-load chunks just to finish scanning a tree.
-
-Before anything is moved, TimberShift:
-
-1. Detects the tree within configured limits.
-2. Calculates where each block needs to move.
-3. Checks that those destinations are safe.
-4. Captures the original block data.
-5. Applies the movement only after validation.
-
-This prevents a naive block-by-block movement from overwriting logs or unrelated terrain.
-
-Fast leaf decay is also processed in small batches rather than deleting a large canopy in one server tick.
-
----
-
-## Debugging
-
-If TimberShift isn't recognising a particular tree, enable debug logging:
-
-```yaml id="j32x0a"
-general:
-  debug: true
-```
-
-Debug output includes useful information about things like:
-
-- tree detection
-- rejected structures
-- scan limits
-- blocked destinations
-- unloaded chunks
-- leaf detection
-
-Turn it back off once you're finished troubleshooting.
-
----
-
-## Building from source
-
-You'll need **JDK 25** and Git.
-
-```bash id="09b4ks"
-git clone https://github.com/thegeorgeadamson/TimberShift.git
-cd TimberShift
-
+```bash
 ./gradlew clean build
 ```
 
-The compiled plugin will be available in:
+The plugin JAR is written to `build/libs/TimberShift-1.1.0.jar`.
 
-```text id="bkjl4m"
-build/libs/
-```
+## Verification status
 
----
+Version 1.1.0 has 36 automated tests covering detection, movement planning, trusted-tree state, world
+filters, activation, leaf scanning, neighboring-tree support, persistent leaves, and queue limits. The
+release JAR has also completed an enable, status, configuration reload, disable, and clean-shutdown smoke
+test on Paper 26.2 build 112.
 
-## Bugs & contributions
+Full in-game behavior still needs testing on a representative server before production use. The
+[manual test plan](docs/MANUAL_TEST_PLAN.md) covers normal and unusual trees, protection plugins,
+concurrent chopping, chunk boundaries, reloads, and leaf drops.
 
-Found a tree that TimberShift doesn't like?
+## Reporting a problem
 
-Open an issue and, if possible, include:
-
-- your server software and version
-- TimberShift version
-- tree type
-- relevant config changes
-- a screenshot of the tree
-- steps to reproduce it
-
-Trees growing into each other, large oaks and jungle trees are particularly useful test cases.
-
-Pull requests are welcome.
-
-When contributing, keep the main idea of TimberShift in mind:
-
-> **Make chopping trees more convenient without removing the chopping.**
-
-World safety and server performance take priority over trying to handle every bizarre arrangement of logs perfectly.
-
----
+Please open an issue with the TimberShift version, server software and build, relevant configuration,
+tree type, reproduction steps, and a screenshot when the tree shape matters.
 
 ## License
 
-TimberShift is open source under the **GNU General Public License v3.0**.
-
-See [`LICENSE`](LICENSE) for the full license.
-
----
-
-<div align="center">
-
-Made by **George Adamson**
-
-**Chop the tree. Let the tree come down to you.**
-
-</div>
+TimberShift is available under the [GNU General Public License v3.0](LICENSE).

@@ -1,0 +1,82 @@
+# TimberShift configuration
+# Reload changes safely with /timbershift reload. Do not use Bukkit /reload.
+
+config-version: 2
+
+general:
+  # Master switch. Commands remain available while movement is disabled.
+  enabled: true
+  # Logs bounded detection decisions and safe abort reasons to the console.
+  debug: false
+
+activation:
+  require-axe: true
+  require-permission: true
+  # Sneak while breaking a log to request completely vanilla behavior.
+  sneak-bypasses: true
+
+worlds:
+  # BLACKLIST enables every world except those listed. WHITELIST does the reverse.
+  mode: BLACKLIST
+  list: []
+
+tree-detection:
+  # A newly encountered structure needs this many non-persistent, matching leaves.
+  # Once verified, shifted logs remain trusted briefly so a detached crown can finish.
+  require-natural-leaves: true
+  minimum-natural-leaves: 4
+  allow-mixed-log-families: false
+  max-break-height-above-base: 1
+  trusted-tree-seconds: 180
+
+  limits:
+    max-logs: 256
+    max-height: 48
+    max-horizontal-radius: 12
+    max-scanned-blocks: 6000
+
+movement:
+  # Values above one are supported, but one preserves the intended vanilla effort.
+  blocks-per-chop: 1
+  # When true, even touching an unloaded chunk boundary aborts the scan safely.
+  abort-on-unloaded-chunk: true
+
+leaves:
+  fast-decay:
+    # Accelerates only non-persistent leaves that no longer have vanilla-range log support.
+    enabled: true
+    initial-delay-ticks: 10
+    interval-ticks: 2
+
+    # Processing and scan limits are global/per tree respectively. Raising them can increase tick cost.
+    max-leaves-per-batch: 32
+    max-leaves-per-tree: 512
+    max-radius: 12
+    max-scanned-blocks: 2048
+    max-active-operations: 32
+
+    # Uses the server's normal no-tool block loot table (saplings, sticks, apples, etc.).
+    # Disable this for fast-decayed leaves to disappear without drops.
+    preserve-vanilla-drops: true
+
+    effects:
+      particles: true
+      sounds: false
+
+effects:
+  sound:
+    enabled: true
+    key: minecraft:block.wood.place
+    volume: 0.35
+    pitch: 0.85
+  particles:
+    enabled: true
+    count: 4
+
+messages:
+  prefix: "&8[&6TimberShift&8] "
+  no-permission: "&cYou don't have permission to do that."
+  reloaded: "&aConfiguration reloaded."
+  toggled-on: "&aTimberShift is now enabled for you."
+  toggled-off: "&eTimberShift is now disabled for you."
+  player-only: "&cOnly a player can use that command."

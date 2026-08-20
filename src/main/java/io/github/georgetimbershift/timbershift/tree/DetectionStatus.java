@@ -1,0 +1,15 @@
+package io.github.georgetimbershift.timbershift.tree;
+
+public enum DetectionStatus {
+    ACCEPTED,
+    NO_CONNECTED_LOGS,
+    MIXED_LOG_FAMILY,
+    BREAK_TOO_HIGH,
+    INSUFFICIENT_NATURAL_LEAVES,
+    OBVIOUS_STRUCTURE_CONTACT,
+    LOG_LIMIT_REACHED,
+    HEIGHT_LIMIT_REACHED,
+    HORIZONTAL_LIMIT_REACHED,
+    SCAN_LIMIT_REACHED,
+    UNLOADED_CHUNK
+}
