@@ -1,7 +1,9 @@
 # TimberShift configuration
 # Reload changes safely with /timbershift reload. Do not use Bukkit /reload.
+# Support and Minecraft version requests: https://discord.gg/VmQAzmYyvA
+# Full documentation: https://github.com/thegeorgeadamson/TimberShift
 
-config-version: 2
+config-version: 3
 
 general:
   # Master switch. Commands remain available while movement is disabled.
@@ -26,6 +28,8 @@ tree-detection:
   require-natural-leaves: true
   minimum-natural-leaves: 4
   allow-mixed-log-families: false
+  # Records logs placed while TimberShift is installed and excludes them from tree movement.
+  protect-player-placed-logs: true
   max-break-height-above-base: 1
   trusted-tree-seconds: 180
 
@@ -47,6 +51,10 @@ leaves:
     enabled: true
     initial-delay-ticks: 10
     interval-ticks: 2
+
+    # One tree removes only this many randomly ordered leaves per visible decay step.
+    # The global batch limit below still protects the tick when several trees decay together.
+    leaves-per-step: 2
 
     # Processing and scan limits are global/per tree respectively. Raising them can increase tick cost.
     max-leaves-per-batch: 32
@@ -80,3 +88,35 @@ messages:
   toggled-on: "&aTimberShift is now enabled for you."
   toggled-off: "&eTimberShift is now disabled for you."
   player-only: "&cOnly a player can use that command."
+
+# Examples
+# --------
+# Change the matching values above; do not paste a second copy of the same section.
+# Reload each change with /timbershift reload.
+
+# Run TimberShift only in selected worlds:
+# worlds:
+#   mode: WHITELIST
+#   list:
+#     - survival
+#     - resource_world
+
+# Make leaf decay gentler and easier to watch:
+# leaves:
+#   fast-decay:
+#     interval-ticks: 3
+#     leaves-per-step: 1
+
+# Keep fast decay but prevent accelerated leaves from dropping items:
+# leaves:
+#   fast-decay:
+#     preserve-vanilla-drops: false
+
+# Turn fast leaf decay off while keeping progressive log movement:
+# leaves:
+#   fast-decay:
+#     enabled: false
+
+# Investigate why an unusual tree was skipped (disable again after testing):
+# general:
+#   debug: true

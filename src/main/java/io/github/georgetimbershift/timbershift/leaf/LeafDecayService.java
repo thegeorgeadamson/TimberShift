@@ -5,6 +5,7 @@ import io.github.georgetimbershift.timbershift.config.TimberShiftConfig;
 import io.github.georgetimbershift.timbershift.material.MaterialClassifier;
 import io.github.georgetimbershift.timbershift.model.BlockPos;
 import io.github.georgetimbershift.timbershift.model.LogFamily;
+import io.github.georgetimbershift.timbershift.service.BlockKey;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -20,11 +21,17 @@ import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 public final class LeafDecayService {
     private static final NamespacedKey DECAY_SOUND_KEY = NamespacedKey.minecraft("block.grass.break");
@@ -35,6 +42,8 @@ public final class LeafDecayService {
     private final LeafCandidateScanner scanner = new LeafCandidateScanner();
     private final LeafSupportChecker supportChecker = new LeafSupportChecker();
     private final LeafDecayQueue queue = new LeafDecayQueue();
+    private final Map<UUID, LeafCanopyWatch> canopyWatches = new LinkedHashMap<>();
+    private final Set<BlockKey> activeDecayEvents = new HashSet<>();
     private BukkitTask task;
     private long serviceTick;
 
@@ -77,8 +86,8 @@ public final class LeafDecayService {
             return Set.of();
         }
 
-        List<BlockPos> orderedCandidates = candidates.stream().sorted(BlockPos.Y_X_Z_ORDER).toList();
-        if (queue.enqueue(true, worldId, orderedCandidates, serviceTick + config.initialDelayTicks(),
+        List<BlockPos> shuffledCandidates = shuffled(candidates);
+        if (queue.enqueue(true, worldId, shuffledCandidates, serviceTick + config.initialDelayTicks(),
                 config.maxActiveOperations())) {
             ensureTask();
             debug("Queued " + candidates.size() + " leaves at " + origin
@@ -103,6 +112,70 @@ public final class LeafDecayService {
         return queue.size();
     }
 
+    public void rememberCanopy(
+            UUID sessionId,
+            UUID worldId,
+            Collection<BlockPos> candidates,
+            int lifetimeSeconds
+    ) {
+        TimberShiftConfig.FastDecay config = configuration.current().fastDecay();
+        pruneCanopyWatches();
+        if (!config.enabled() || candidates.isEmpty() || candidates.size() > config.maxLeavesPerTree()) {
+            canopyWatches.remove(sessionId);
+            return;
+        }
+        long expiresAt = System.currentTimeMillis() + lifetimeSeconds * 1000L;
+        LeafCanopyWatch existing = canopyWatches.get(sessionId);
+        if (existing != null) {
+            existing.refresh(candidates, expiresAt);
+            return;
+        }
+        while (canopyWatches.size() >= config.maxActiveOperations()) {
+            Iterator<UUID> iterator = canopyWatches.keySet().iterator();
+            if (!iterator.hasNext()) {
+                break;
+            }
+            iterator.next();
+            iterator.remove();
+        }
+        canopyWatches.put(sessionId, new LeafCanopyWatch(worldId, candidates, expiresAt));
+    }
+
+    public void onNaturalLeafRemoved(UUID worldId, BlockPos position) {
+        TimberShiftConfig config = configuration.current();
+        if (!config.general().enabled() || !config.fastDecay().enabled()) {
+            return;
+        }
+        World world = plugin.getServer().getWorld(worldId);
+        if (world == null || !config.worlds().allows(world.getName())) {
+            return;
+        }
+
+        pruneCanopyWatches();
+        for (LeafCanopyWatch watch : canopyWatches.values()) {
+            if (!watch.worldId().equals(worldId) || !watch.isTriggeredBy(position)) {
+                continue;
+            }
+            watch.forget(position);
+            if (watch.isEmpty() || !watch.mayWake(serviceTick)) {
+                continue;
+            }
+            TimberShiftConfig.FastDecay decay = config.fastDecay();
+            long readyAt = serviceTick + decay.initialDelayTicks();
+            if (queue.enqueue(true, worldId, shuffled(watch.candidates()), readyAt,
+                    decay.maxActiveOperations())) {
+                watch.deferWakeUntil(readyAt + decay.intervalTicks());
+                ensureTask();
+                debug("Requeued a remembered canopy after nearby natural leaf removal at " + position);
+            }
+        }
+        canopyWatches.values().removeIf(LeafCanopyWatch::isEmpty);
+    }
+
+    public boolean isAcceleratedDecayEvent(UUID worldId, BlockPos position) {
+        return activeDecayEvents.contains(new BlockKey(worldId, position));
+    }
+
     private void ensureTask() {
         if (task == null) {
             task = plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
@@ -121,19 +194,20 @@ public final class LeafDecayService {
         }
 
         int remaining = config.maxLeavesPerBatch();
-        while (remaining-- > 0) {
-            LeafDecayOperation operation = queue.pollReady(serviceTick);
-            if (operation == null) {
-                break;
+        for (LeafDecayOperation operation : queue.pollReadyRound(serviceTick)) {
+            if (remaining <= 0) {
+                queue.requeue(operation);
+                continue;
             }
-            BlockPos candidate = operation.poll();
-            if (candidate != null) {
+            int operationRemaining = Math.min(config.leavesPerStep(), remaining);
+            for (BlockPos candidate : operation.pollUpTo(operationRemaining)) {
                 processCandidate(operation.worldId(), candidate, config);
+                remaining--;
             }
             queue.requeue(operation);
         }
         if (queue.isEmpty()) {
-            clearAndCancel();
+            cancelTask();
         }
     }
 
@@ -143,7 +217,12 @@ public final class LeafDecayService {
             return;
         }
         BukkitLeafWorld view = new BukkitLeafWorld(world, classifier);
-        if (supportChecker.evaluate(view, position) != LeafEligibilityStatus.ELIGIBLE) {
+        LeafEligibilityStatus eligibility = supportChecker.evaluate(view, position);
+        if (eligibility != LeafEligibilityStatus.ELIGIBLE) {
+            if (eligibility == LeafEligibilityStatus.PERSISTENT
+                    || eligibility == LeafEligibilityStatus.NOT_A_LEAF) {
+                forgetWatchedCandidate(worldId, position);
+            }
             return;
         }
 
@@ -154,7 +233,13 @@ public final class LeafDecayService {
         }
 
         LeavesDecayEvent event = new LeavesDecayEvent(block);
-        plugin.getServer().getPluginManager().callEvent(event);
+        BlockKey eventKey = new BlockKey(worldId, position);
+        activeDecayEvents.add(eventKey);
+        try {
+            plugin.getServer().getPluginManager().callEvent(event);
+        } finally {
+            activeDecayEvents.remove(eventKey);
+        }
         if (event.isCancelled() || supportChecker.evaluate(view, position) != LeafEligibilityStatus.ELIGIBLE) {
             return;
         }
@@ -172,6 +257,7 @@ public final class LeafDecayService {
             removed = true;
         }
         if (removed) {
+            forgetWatchedCandidate(worldId, position);
             playEffects(world, position, effectData, config.effects());
         }
     }
@@ -196,10 +282,36 @@ public final class LeafDecayService {
 
     private void clearAndCancel() {
         queue.clear();
+        canopyWatches.clear();
+        activeDecayEvents.clear();
+        cancelTask();
+    }
+
+    private void cancelTask() {
         if (task != null) {
             task.cancel();
             task = null;
         }
+    }
+
+    private List<BlockPos> shuffled(Collection<BlockPos> candidates) {
+        List<BlockPos> result = new ArrayList<>(candidates);
+        Collections.shuffle(result, ThreadLocalRandom.current());
+        return result;
+    }
+
+    private void pruneCanopyWatches() {
+        long now = System.currentTimeMillis();
+        canopyWatches.values().removeIf(watch -> watch.isExpired(now) || watch.isEmpty());
+    }
+
+    private void forgetWatchedCandidate(UUID worldId, BlockPos position) {
+        for (LeafCanopyWatch watch : canopyWatches.values()) {
+            if (watch.worldId().equals(worldId)) {
+                watch.forget(position);
+            }
+        }
+        canopyWatches.values().removeIf(LeafCanopyWatch::isEmpty);
     }
 
     private Set<BlockPos> combineCandidates(

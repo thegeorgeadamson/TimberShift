@@ -5,7 +5,7 @@ protection cases with the production server's actual protection configuration be
 
 ## Preparation
 
-1. Run `./gradlew clean build` and copy `build/libs/TimberShift-1.1.0.jar` to `plugins/`.
+1. Run `./gradlew clean build` and copy `build/libs/TimberShift-1.2.0.jar` to `plugins/`.
 2. Start the server, confirm TimberShift enables without warnings, and run `/timbershift status`.
 3. Keep `blocks-per-chop: 1`, enable debug logging for rejection diagnostics, and use a Survival axe
    unless a case says otherwise.
@@ -74,6 +74,8 @@ protection cases with the production server's actual protection configuration be
 
 ## Commands and shutdown
 
+- [ ] Start the server and verify the TimberShift wordmark shows the author, plugin version, Minecraft
+  version, fast-decay state, and a plausible measured load time without obscuring other startup logs.
 - [ ] Run help/status/reload from console and as permitted/unpermitted players; output is concise and no
   command throws.
 - [ ] Verify `/ts` alias and tab completion.
@@ -83,11 +85,15 @@ protection cases with the production server's actual protection configuration be
 ## Fast leaf decay
 
 - [ ] Grow and fully chop an oak: unsupported natural leaves decay progressively after the configured
-  delay rather than in one synchronous burst.
+  delay in small, shuffled groups rather than in one synchronous burst.
+- [ ] Set `leaves-per-step` to 1 and then 4, reloading between tests: the visible per-tree pace changes
+  while the global batch cap remains respected.
 - [ ] Place leaves manually, remove every nearby log, and wait: persistent leaves remain indefinitely.
 - [ ] Put persistent leaves directly against a natural canopy: only eligible natural leaves disappear.
 - [ ] Grow two same-type trees with touching canopies, chop one, and verify the other tree's supported
   canopy remains.
+- [ ] After the previous supported pass finishes, manually break the natural leaf bridge between the
+  canopies: remembered unsupported leaves resume fast decay while the logged tree remains protected.
 - [ ] Chop only the first bottom log of a tall TimberShift tree, then pause longer than the configured
   initial delay: leaves supported by shifted upper logs do not disappear prematurely.
 - [ ] Finish the same tree: its now-unsupported natural canopy decays quickly.
@@ -106,6 +112,18 @@ protection cases with the production server's actual protection configuration be
 - [ ] Reload while decay is pending, both enabled and disabled: old pending work clears and no duplicate
   scheduler appears.
 - [ ] Restart while decay is pending: startup is clean and old pending work does not return.
+
+## Player-placed log provenance
+
+- [ ] Place a log beside or inside a natural tree after TimberShift is installed, then chop around it:
+  the placed log is never shifted and may conservatively stop the operation.
+- [ ] Restart the server and repeat around that placed log: the protection record survives chunk save
+  and reload.
+- [ ] Move a recorded log with an extending and retracting piston: its destination remains protected.
+- [ ] Break, burn, and explode recorded logs in separate tests, then place/grow a natural tree at those
+  coordinates: stale placement records do not incorrectly block the later tree.
+- [ ] Confirm a pre-existing log building with persistent decorative leaves is still rejected by the
+  normal leaf/structure checks; placement provenance cannot be reconstructed retroactively.
 
 Record the server implementation/build, protection-plugin versions, TimberShift config, results, and
 any debug rejection lines with the deployment notes.

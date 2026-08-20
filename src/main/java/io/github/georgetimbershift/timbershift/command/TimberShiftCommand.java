@@ -112,6 +112,11 @@ public final class TimberShiftCommand implements CommandExecutor, TabCompleter {
         message(sender, "&6TimberShift status:");
         message(sender, "&7Global: " + state(config.general().enabled()));
         message(sender, "&7Fast leaf decay: " + state(config.fastDecay().enabled()));
+        message(sender, "&7Leaf decay pace: &f" + config.fastDecay().leavesPerStep()
+                + (config.fastDecay().leavesPerStep() == 1 ? " leaf" : " leaves")
+                + " every " + config.fastDecay().intervalTicks() + " ticks");
+        message(sender, "&7Player-placed log protection: "
+                + state(config.detection().protectPlayerPlacedLogs()));
         if (sender instanceof Player player) {
             message(sender, "&7For you: " + state(preferences.isEnabled(player)));
             message(sender, "&7World &f" + player.getWorld().getName() + "&7: "

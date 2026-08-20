@@ -1,4 +1,17 @@
+<div align="center">
+
 # TimberShift
+
+**Progressive tree chopping for Minecraft servers.**
+
+[![Minecraft 26.2](https://img.shields.io/badge/Minecraft-26.2-62b47a?style=flat-square)](#requirements)
+[![Java 25](https://img.shields.io/badge/Java-25-e76f00?style=flat-square)](#requirements)
+[![Latest release](https://img.shields.io/github/v/release/thegeorgeadamson/TimberShift?style=flat-square&label=release)](https://github.com/thegeorgeadamson/TimberShift/releases/latest)
+[![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue?style=flat-square)](LICENSE)
+
+[Download](https://github.com/thegeorgeadamson/TimberShift/releases/latest) · [Discord support](https://discord.gg/VmQAzmYyvA) · [Report an issue](https://github.com/thegeorgeadamson/TimberShift/issues)
+
+</div>
 
 TimberShift is a Minecraft server plugin that brings the remaining logs of a tree down as you chop it.
 It is deliberately not a tree-felling plugin: every log still has to be broken by a player.
@@ -16,9 +29,13 @@ Minecraft.
 Paper and Purpur are the primary targets. TimberShift is compiled against the common Spigot API and
 does not use NMS, CraftBukkit internals, or a server-specific plugin loader.
 
+The current build is deliberately targeted at Minecraft 26.2. If you need another Minecraft version,
+[ask in the support server](https://discord.gg/VmQAzmYyvA); support for other versions can be considered
+on request where the server APIs allow it.
+
 ## Installation
 
-1. Download `TimberShift-1.1.0.jar` from the [latest release](../../releases/latest).
+1. Download `TimberShift-1.2.0.jar` from the [latest release](../../releases/latest).
 2. Stop the server and place the JAR in its `plugins` directory.
 3. Start the server. TimberShift will create `plugins/TimberShift/config.yml`.
 
@@ -34,6 +51,7 @@ No other plugins are required.
 - Leaves the player's original block break to normal Minecraft mechanics.
 - Supports a sneak-to-bypass option, per-player toggles, and per-world allow/deny lists.
 - Observes cancelled block-break events and does nothing when the original break is denied.
+- Records player-placed logs in persistent chunk data and excludes them from tree movement.
 - Includes optional, locally scheduled fast leaf decay.
 
 If part of a tree cannot move safely, TimberShift leaves that part where it is. This is intentional: an
@@ -52,8 +70,14 @@ With `preserve-vanilla-drops` enabled, leaf removal uses the server's normal no-
 applicable saplings, sticks, apples, and other drops. TimberShift does not apply shears or Fortune and
 does not maintain its own copy of Minecraft's loot tables.
 
+Leaves are shuffled and removed in small visible steps. The per-tree `leaves-per-step` setting controls
+the pace, while `max-leaves-per-batch` remains a global safety ceiling when several trees are active.
+If a supported canopy was skipped because it touched another tree, breaking a connecting natural leaf
+or the start of vanilla leaf decay wakes that remembered canopy for another safe pass.
+
 The system uses one bounded central queue. It never changes or depends on `randomTickSpeed`, and it does
-not force-load chunks.
+not force-load chunks. Only canopies already associated with a verified TimberShift tree are woken by
+later leaf changes.
 
 ```yaml
 leaves:
@@ -61,6 +85,7 @@ leaves:
     enabled: true
     initial-delay-ticks: 10
     interval-ticks: 2
+    leaves-per-step: 2
     max-leaves-per-batch: 32
     max-leaves-per-tree: 512
     max-radius: 12
@@ -76,6 +101,13 @@ leaves:
 
 The generated [`config.yml`](src/main/resources/config.yml) documents every option. The main sections
 control activation, world filtering, tree-detection limits, movement, leaf decay, effects, and messages.
+
+Minecraft exposes an exact persistence flag for player-placed leaves, which TimberShift always checks.
+Ordinary logs have no equivalent vanilla flag. With `protect-player-placed-logs: true`, TimberShift
+therefore records log placements it observes while installed in the owning chunk's persistent plugin
+data. Those records survive restarts and follow piston movement. Logs placed before TimberShift was
+installed cannot be identified retrospectively, so the natural-leaf and structure checks remain in
+place as the fallback protection.
 
 Reload changes with:
 
@@ -115,14 +147,14 @@ The repository includes a pinned Gradle wrapper. With JDK 25 available:
 ./gradlew clean build
 ```
 
-The plugin JAR is written to `build/libs/TimberShift-1.1.0.jar`.
+The plugin JAR is written to `build/libs/TimberShift-1.2.0.jar`.
 
 ## Verification status
 
-Version 1.1.0 has 36 automated tests covering detection, movement planning, trusted-tree state, world
+Version 1.2.0 has 43 automated tests covering detection, movement planning, trusted-tree state, world
 filters, activation, leaf scanning, neighboring-tree support, persistent leaves, and queue limits. The
-release JAR has also completed an enable, status, configuration reload, disable, and clean-shutdown smoke
-test on Paper 26.2 build 112.
+1.2.0 JAR also completed an enable, startup-banner, status, configuration reload, disable, and
+clean-shutdown smoke test on Paper 26.2 build 112.
 
 Full in-game behavior still needs testing on a representative server before production use. The
 [manual test plan](docs/MANUAL_TEST_PLAN.md) covers normal and unusual trees, protection plugins,
@@ -130,8 +162,10 @@ concurrent chopping, chunk boundaries, reloads, and leaf drops.
 
 ## Reporting a problem
 
-Please open an issue with the TimberShift version, server software and build, relevant configuration,
-tree type, reproduction steps, and a screenshot when the tree shape matters.
+For help or a version-support request, join the [TimberShift support server](https://discord.gg/VmQAzmYyvA).
+For reproducible bugs, [open a GitHub issue](https://github.com/thegeorgeadamson/TimberShift/issues)
+with the TimberShift version, server software and build, relevant configuration, tree type,
+reproduction steps, and a screenshot when the tree shape matters.
 
 ## License
 

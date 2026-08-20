@@ -35,4 +35,34 @@ class LeafDecayQueueTest {
         assertEquals(new BlockPos(0, 0, 0), ready.poll());
         assertTrue(ready.isEmpty());
     }
+
+    @Test
+    void operationStepTakesOnlyItsConfiguredVisibleSlice() {
+        LeafDecayOperation operation = new LeafDecayOperation(UUID.randomUUID(), List.of(
+                new BlockPos(0, 0, 0),
+                new BlockPos(1, 0, 0),
+                new BlockPos(2, 0, 0),
+                new BlockPos(3, 0, 0)), 0);
+
+        assertEquals(List.of(new BlockPos(0, 0, 0), new BlockPos(1, 0, 0)), operation.pollUpTo(2));
+        assertFalse(operation.isEmpty());
+        assertEquals(List.of(new BlockPos(2, 0, 0), new BlockPos(3, 0, 0)), operation.pollUpTo(2));
+        assertTrue(operation.isEmpty());
+    }
+
+    @Test
+    void readyRoundReturnsEachOperationAtMostOnce() {
+        LeafDecayQueue queue = new LeafDecayQueue();
+        UUID world = UUID.randomUUID();
+        queue.enqueue(true, world, List.of(new BlockPos(0, 0, 0)), 5, 3);
+        queue.enqueue(true, world, List.of(new BlockPos(1, 0, 0)), 10, 3);
+        queue.enqueue(true, world, List.of(new BlockPos(2, 0, 0)), 5, 3);
+
+        List<LeafDecayOperation> ready = queue.pollReadyRound(5);
+
+        assertEquals(2, ready.size());
+        assertEquals(new BlockPos(0, 0, 0), ready.get(0).poll());
+        assertEquals(new BlockPos(2, 0, 0), ready.get(1).poll());
+        assertEquals(1, queue.size());
+    }
 }

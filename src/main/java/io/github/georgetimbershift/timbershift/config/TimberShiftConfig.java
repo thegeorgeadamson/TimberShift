@@ -38,6 +38,7 @@ public record TimberShiftConfig(
             boolean requireNaturalLeaves,
             int minimumNaturalLeaves,
             boolean allowMixedLogFamilies,
+            boolean protectPlayerPlacedLogs,
             int maxBreakHeightAboveBase,
             int trustedTreeSeconds,
             Limits limits
@@ -54,6 +55,7 @@ public record TimberShiftConfig(
             boolean enabled,
             int initialDelayTicks,
             int intervalTicks,
+            int leavesPerStep,
             int maxLeavesPerBatch,
             int maxLeavesPerTree,
             int maxRadius,
