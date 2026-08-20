@@ -5,7 +5,7 @@ protection cases with the production server's actual protection configuration be
 
 ## Preparation
 
-1. Run `./gradlew clean build` and copy `build/libs/TimberShift-1.2.0.jar` to `plugins/`.
+1. Run `./gradlew clean build` and copy `build/libs/TimberShift-1.2.1.jar` to `plugins/`.
 2. Start the server, confirm TimberShift enables without warnings, and run `/timbershift status`.
 3. Keep `blocks-per-chop: 1`, enable debug logging for rejection diagnostics, and use a Survival axe
    unless a case says otherwise.
@@ -62,14 +62,20 @@ protection cases with the production server's actual protection configuration be
 ## Concurrency and lifecycle
 
 - [ ] 24. Two players chop the same tree on nearby ticks: no duplicate blocks/items and no deletion.
-- [ ] 25. Rapidly break successive reachable logs: every successful break produces at most one shift.
+- [ ] 25. Chop a straight trunk while standing on each side: the exact vanilla log drop moves into the
+  nearest open space on the player's side instead of being ejected by the descending log. Repeated drops
+  retain their varied vanilla positions and gentle motion rather than stacking at one fixed point.
+- [ ] 26. Surround a trunk on several sides with solid blocks, leaving one side open: the drop uses the
+  open side. If every side is blocked, it falls back to the nearby player's open block rather than
+  forcing a chunk load or placing the drop inside another solid block.
+- [ ] 27. Rapidly break successive reachable logs: every successful break produces at most one shift.
 - [ ] Modify or piston-move a planned source/destination immediately after a break: revalidation aborts
   instead of overwriting the change.
 - [ ] Explode part of a recently shifted tree: stale trusted positions do not expand into other logs.
-- [ ] 26. Edit valid and invalid settings, then run `/timbershift reload`: valid values activate without
+- [ ] 28. Edit valid and invalid settings, then run `/timbershift reload`: valid values activate without
   duplicate listeners/tasks; invalid values warn and fall back or retain the old config on YAML failure.
-- [ ] 27. Restart the server: plugin enables once, no task/state leak appears, and normal detection resumes.
-- [ ] 28. Toggle off, restart, and run `/timbershift status`: the player preference remains off; toggle on
+- [ ] 29. Restart the server: plugin enables once, no task/state leak appears, and normal detection resumes.
+- [ ] 30. Toggle off, restart, and run `/timbershift status`: the player preference remains off; toggle on
   and confirm normal behavior returns.
 
 ## Commands and shutdown

@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "io.github.georgetimbershift"
-version = "1.2.0"
+version = "1.2.1"
 val pluginVersion = version.toString()
 
 repositories {

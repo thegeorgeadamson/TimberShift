@@ -35,7 +35,7 @@ on request where the server APIs allow it.
 
 ## Installation
 
-1. Download `TimberShift-1.2.0.jar` from the [latest release](../../releases/latest).
+1. Download `TimberShift-1.2.1.jar` from the [latest release](../../releases/latest).
 2. Stop the server and place the JAR in its `plugins` directory.
 3. Start the server. TimberShift will create `plugins/TimberShift/config.yml`.
 
@@ -49,6 +49,7 @@ No other plugins are required.
 - Uses bounded natural-tree detection to avoid treating every wooden structure as a tree.
 - Never replaces terrain or an unrelated block to complete a move.
 - Leaves the player's original block break to normal Minecraft mechanics.
+- Moves the break's exact item drops aside only when a descending log would otherwise trap them.
 - Supports a sneak-to-bypass option, per-player toggles, and per-world allow/deny lists.
 - Observes cancelled block-break events and does nothing when the original break is denied.
 - Records player-placed logs in persistent chunk data and excludes them from tree movement.
@@ -147,7 +148,7 @@ The repository includes a pinned Gradle wrapper. With JDK 25 available:
 ./gradlew clean build
 ```
 
-The plugin JAR is written to `build/libs/TimberShift-1.2.0.jar`.
+The plugin JAR is written to `build/libs/TimberShift-1.2.1.jar`.
 
 ## Reporting a problem
 

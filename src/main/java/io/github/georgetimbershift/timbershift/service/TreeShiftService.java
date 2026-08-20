@@ -23,13 +23,19 @@ import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -46,6 +52,7 @@ public final class TreeShiftService {
     private final TreeShiftExecutor executor;
     private final Set<BlockKey> pending = new HashSet<>();
     private final Set<BlockKey> locked = new HashSet<>();
+    private final Map<BlockKey, CapturedDrops> pendingDrops = new HashMap<>();
 
     public TreeShiftService(
             JavaPlugin plugin,
@@ -76,22 +83,43 @@ public final class TreeShiftService {
         UUID trustedSession = trustedTrees.lookup(worldId, broken, family);
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             pending.remove(anchorKey);
+            CapturedDrops capturedDrops = pendingDrops.remove(anchorKey);
             if (observedEvent.isCancelled()) {
                 debug("Aborted shift at " + broken + ": another listener cancelled the observed break");
                 return;
             }
-            process(worldId, broken, family, trustedSession);
+            process(worldId, broken, family, trustedSession, capturedDrops);
         });
         return true;
     }
 
+    public void observeDrops(
+            World world,
+            BlockPos broken,
+            Player player,
+            Collection<Item> items
+    ) {
+        BlockKey key = new BlockKey(world.getUID(), broken);
+        if (!pending.contains(key) || items.isEmpty()) {
+            return;
+        }
+        pendingDrops.put(key, new CapturedDrops(player.getUniqueId(), List.copyOf(items)));
+    }
+
     public void shutdown() {
         pending.clear();
+        pendingDrops.clear();
         locked.clear();
         trustedTrees.clear();
     }
 
-    private void process(UUID worldId, BlockPos broken, LogFamily family, UUID trustedSession) {
+    private void process(
+            UUID worldId,
+            BlockPos broken,
+            LogFamily family,
+            UUID trustedSession,
+            CapturedDrops capturedDrops
+    ) {
         World world = plugin.getServer().getWorld(worldId);
         if (world == null) {
             debug("Aborted shift because the world unloaded: " + worldId);
@@ -164,6 +192,7 @@ public final class TreeShiftService {
                 debug("Skipped overlapping shift at " + broken);
                 return;
             }
+            List<DropSnapshot> dropsInsideDestination = dropsInsideDestination(broken, plan, capturedDrops);
             ExecutionStatus execution;
             try {
                 execution = executor.execute(world, plan);
@@ -177,6 +206,7 @@ public final class TreeShiftService {
                 return;
             }
 
+            relocateBreakDrops(world, broken, capturedDrops, dropsInsideDestination);
             rememberTransformation(worldId, family, broken, detection, plan, trustedSession, leafCandidates,
                     config.detection().trustedTreeSeconds());
             playEffects(world, broken, plan, config.effects());
@@ -266,6 +296,103 @@ public final class TreeShiftService {
         return List.copyOf(keys);
     }
 
+    private List<DropSnapshot> dropsInsideDestination(
+            BlockPos broken,
+            TreeShiftPlan plan,
+            CapturedDrops capturedDrops
+    ) {
+        if (capturedDrops == null
+                || plan.moves().stream().noneMatch(move -> move.destination().equals(broken))) {
+            return List.of();
+        }
+        return capturedDrops.items().stream()
+                .filter(Item::isValid)
+                .filter(item -> sameBlock(item.getLocation(), broken))
+                .map(item -> new DropSnapshot(
+                        item,
+                        item.getLocation().clone(),
+                        item.getVelocity().clone()))
+                .toList();
+    }
+
+    private void relocateBreakDrops(
+            World world,
+            BlockPos broken,
+            CapturedDrops capturedDrops,
+            Collection<DropSnapshot> drops
+    ) {
+        if (capturedDrops == null || drops.isEmpty()) {
+            return;
+        }
+        Player player = plugin.getServer().getPlayer(capturedDrops.playerId());
+        Location playerLocation = player != null && player.getWorld().getUID().equals(world.getUID())
+                ? player.getLocation()
+                : null;
+        double preferredX = playerLocation != null
+                ? playerLocation.getX()
+                : broken.x() + 0.5;
+        double preferredZ = playerLocation != null
+                ? playerLocation.getZ()
+                : broken.z() + 0.5;
+        Optional<BlockPos> destination = DropRelocationPlanner.chooseSide(
+                broken,
+                preferredX,
+                preferredZ,
+                position -> world.isChunkLoaded(position.chunkX(), position.chunkZ())
+                        && world.getBlockAt(position.x(), position.y(), position.z()).isPassable())
+                .or(() -> playerDropFallback(world, broken, playerLocation));
+        if (destination.isEmpty()) {
+            debug("Could not find open space beside shifted drops at " + broken);
+            return;
+        }
+
+        BlockPos target = destination.get();
+        for (DropSnapshot drop : drops) {
+            Item item = drop.item();
+            if (item.isValid() && item.getWorld().getUID().equals(world.getUID())) {
+                DropRelocationPlanner.DropPosition position = DropRelocationPlanner.preserveVanillaPosition(
+                        broken,
+                        target,
+                        drop.location().getX(),
+                        drop.location().getY(),
+                        drop.location().getZ());
+                Location targetLocation = new Location(world, position.x(), position.y(), position.z());
+                if (item.teleport(targetLocation)) {
+                    item.setVelocity(drop.velocity().clone());
+                }
+            }
+        }
+    }
+
+    private Optional<BlockPos> playerDropFallback(World world, BlockPos broken, Location playerLocation) {
+        if (playerLocation == null) {
+            return Optional.empty();
+        }
+        double deltaX = playerLocation.getX() - (broken.x() + 0.5);
+        double deltaY = playerLocation.getY() - (broken.y() + 0.5);
+        double deltaZ = playerLocation.getZ() - (broken.z() + 0.5);
+        if (deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ > 64.0) {
+            return Optional.empty();
+        }
+
+        BlockPos playerBlock = new BlockPos(
+                playerLocation.getBlockX(),
+                playerLocation.getBlockY(),
+                playerLocation.getBlockZ());
+        if (playerBlock.equals(broken)
+                || !world.isChunkLoaded(playerBlock.chunkX(), playerBlock.chunkZ())
+                || !world.getBlockAt(playerBlock.x(), playerBlock.y(), playerBlock.z()).isPassable()) {
+            return Optional.empty();
+        }
+        return Optional.of(playerBlock);
+    }
+
+    private boolean sameBlock(Location location, BlockPos position) {
+        return location.getBlockX() == position.x()
+                && location.getBlockY() == position.y()
+                && location.getBlockZ() == position.z();
+    }
+
     private boolean acquire(Collection<BlockKey> keys) {
         if (keys.stream().anyMatch(locked::contains)) {
             return false;
@@ -282,5 +409,11 @@ public final class TreeShiftService {
         if (configuration.current().general().debug()) {
             plugin.getLogger().info("[debug] " + message);
         }
+    }
+
+    private record CapturedDrops(UUID playerId, List<Item> items) {
+    }
+
+    private record DropSnapshot(Item item, Location location, Vector velocity) {
     }
 }

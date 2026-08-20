@@ -16,6 +16,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDropItemEvent;
 
 public final class TreeBreakListener implements Listener {
     private final ConfigurationManager configuration;
@@ -68,5 +69,18 @@ public final class TreeBreakListener implements Listener {
         // MONITOR is observation-only: no event field or world state is changed here. The next-tick
         // task also verifies that vanilla actually removed the block before considering movement.
         shifts.schedule(block.getWorld(), position, family, event);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPermittedBlockDrops(BlockDropItemEvent event) {
+        Block block = event.getBlock();
+        if (classifier.logFamily(event.getBlockState().getType()) == null) {
+            return;
+        }
+        shifts.observeDrops(
+                block.getWorld(),
+                new BlockPos(block.getX(), block.getY(), block.getZ()),
+                event.getPlayer(),
+                event.getItems());
     }
 }
