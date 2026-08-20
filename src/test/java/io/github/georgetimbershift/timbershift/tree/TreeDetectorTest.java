@@ -123,7 +123,7 @@ class TreeDetectorTest {
     }
 
     private TimberShiftConfig.Detection detection(int maxLogs, int maxScanned) {
-        return new TimberShiftConfig.Detection(true, 4, false, 1, 180,
+        return new TimberShiftConfig.Detection(true, 4, false, true, 1, 180,
                 new TimberShiftConfig.Limits(maxLogs, 48, 12, maxScanned));
     }
 }

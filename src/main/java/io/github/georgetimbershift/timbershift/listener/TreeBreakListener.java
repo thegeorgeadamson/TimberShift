@@ -8,6 +8,7 @@ import io.github.georgetimbershift.timbershift.model.LogFamily;
 import io.github.georgetimbershift.timbershift.service.ActivationContext;
 import io.github.georgetimbershift.timbershift.service.ActivationPolicy;
 import io.github.georgetimbershift.timbershift.service.PlayerPreferenceService;
+import io.github.georgetimbershift.timbershift.service.PlacedLogTracker;
 import io.github.georgetimbershift.timbershift.service.TreeShiftService;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -20,6 +21,7 @@ public final class TreeBreakListener implements Listener {
     private final ConfigurationManager configuration;
     private final MaterialClassifier classifier;
     private final PlayerPreferenceService preferences;
+    private final PlacedLogTracker placedLogs;
     private final TreeShiftService shifts;
     private final ActivationPolicy activation = new ActivationPolicy();
 
@@ -27,11 +29,13 @@ public final class TreeBreakListener implements Listener {
             ConfigurationManager configuration,
             MaterialClassifier classifier,
             PlayerPreferenceService preferences,
+            PlacedLogTracker placedLogs,
             TreeShiftService shifts
     ) {
         this.configuration = configuration;
         this.classifier = classifier;
         this.preferences = preferences;
+        this.placedLogs = placedLogs;
         this.shifts = shifts;
     }
 
@@ -45,6 +49,11 @@ public final class TreeBreakListener implements Listener {
 
         Player player = event.getPlayer();
         TimberShiftConfig config = configuration.current();
+        BlockPos position = new BlockPos(block.getX(), block.getY(), block.getZ());
+        if (config.detection().protectPlayerPlacedLogs()
+                && placedLogs.isPlayerPlaced(block.getWorld(), position)) {
+            return;
+        }
         ActivationContext context = new ActivationContext(
                 config.general().enabled(),
                 config.worlds().allows(block.getWorld().getName()),
@@ -58,6 +67,6 @@ public final class TreeBreakListener implements Listener {
 
         // MONITOR is observation-only: no event field or world state is changed here. The next-tick
         // task also verifies that vanilla actually removed the block before considering movement.
-        shifts.schedule(block.getWorld(), new BlockPos(block.getX(), block.getY(), block.getZ()), family, event);
+        shifts.schedule(block.getWorld(), position, family, event);
     }
 }

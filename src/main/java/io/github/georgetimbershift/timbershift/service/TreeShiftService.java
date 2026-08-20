@@ -39,6 +39,7 @@ public final class TreeShiftService {
     private final ConfigurationManager configuration;
     private final MaterialClassifier classifier;
     private final TrustedTreeRegistry trustedTrees;
+    private final PlacedLogTracker placedLogs;
     private final LeafDecayService leafDecay;
     private final TreeDetector detector;
     private final TreeShiftPlanner planner;
@@ -51,12 +52,14 @@ public final class TreeShiftService {
             ConfigurationManager configuration,
             MaterialClassifier classifier,
             TrustedTreeRegistry trustedTrees,
+            PlacedLogTracker placedLogs,
             LeafDecayService leafDecay
     ) {
         this.plugin = plugin;
         this.configuration = configuration;
         this.classifier = classifier;
         this.trustedTrees = trustedTrees;
+        this.placedLogs = placedLogs;
         this.leafDecay = leafDecay;
         this.detector = new TreeDetector();
         this.planner = new TreeShiftPlanner();
@@ -108,7 +111,8 @@ public final class TreeShiftService {
                 return;
             }
 
-            BukkitTreeWorld view = new BukkitTreeWorld(world, classifier);
+            BukkitTreeWorld view = new BukkitTreeWorld(world, classifier, placedLogs,
+                    config.detection().protectPlayerPlacedLogs());
             boolean trustedContinuation = trustedSession != null;
             TreeDetectionResult detection = detector.detect(view, broken, family, config.detection(),
                     trustedContinuation, config.movement().abortOnUnloadedChunk());
@@ -120,6 +124,8 @@ public final class TreeShiftService {
                     Set<BlockPos> leafCandidates = leafDecay.enqueueTreeChange(worldId, broken, knownTree,
                             Set.of(family), trustedTrees.leafCandidates(trustedSession));
                     trustedTrees.update(trustedSession, Set.of(broken), Set.of(), leafCandidates,
+                            config.detection().trustedTreeSeconds());
+                    leafDecay.rememberCanopy(trustedSession, worldId, leafCandidates,
                             config.detection().trustedTreeSeconds());
                 }
                 debug("Rejected structure at " + broken + ": " + detection.status()
@@ -147,7 +153,7 @@ public final class TreeShiftService {
             TreeShiftPlan plan = planner.plan(detection.logs(), view, config.movement().blocksPerChop(),
                     config.movement().abortOnUnloadedChunk());
             if (!plan.ready()) {
-                rememberBreakWithoutShift(trustedSession, broken, leafCandidates,
+                rememberBreakWithoutShift(worldId, trustedSession, broken, leafCandidates,
                         config.detection().trustedTreeSeconds());
                 debug("No safe movement at " + broken + ": " + plan.status());
                 return;
@@ -165,7 +171,7 @@ public final class TreeShiftService {
                 release(operationKeys);
             }
             if (execution != ExecutionStatus.APPLIED) {
-                rememberBreakWithoutShift(trustedSession, broken, leafCandidates,
+                rememberBreakWithoutShift(worldId, trustedSession, broken, leafCandidates,
                         config.detection().trustedTreeSeconds());
                 debug("Shift at " + broken + " was not applied: " + execution);
                 return;
@@ -202,16 +208,20 @@ public final class TreeShiftService {
 
         if (existingSession != null) {
             trustedTrees.update(existingSession, removed, added, leafCandidates, lifetimeSeconds);
+            leafDecay.rememberCanopy(existingSession, worldId, leafCandidates, lifetimeSeconds);
             return;
         }
 
         Set<BlockPos> transformedTree = new HashSet<>(detection.logs().keySet());
         transformedTree.removeAll(removed);
         transformedTree.addAll(added);
-        trustedTrees.register(worldId, family, transformedTree, leafCandidates, lifetimeSeconds);
+        UUID newSession = trustedTrees.register(worldId, family, transformedTree, leafCandidates,
+                lifetimeSeconds);
+        leafDecay.rememberCanopy(newSession, worldId, leafCandidates, lifetimeSeconds);
     }
 
     private void rememberBreakWithoutShift(
+            UUID worldId,
             UUID existingSession,
             BlockPos broken,
             Collection<BlockPos> leafCandidates,
@@ -219,6 +229,7 @@ public final class TreeShiftService {
     ) {
         if (existingSession != null) {
             trustedTrees.update(existingSession, Set.of(broken), Set.of(), leafCandidates, lifetimeSeconds);
+            leafDecay.rememberCanopy(existingSession, worldId, leafCandidates, lifetimeSeconds);
         }
     }
 

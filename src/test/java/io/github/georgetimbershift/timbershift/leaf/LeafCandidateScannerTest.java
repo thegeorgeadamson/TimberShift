@@ -83,7 +83,7 @@ class LeafCandidateScannerTest {
     }
 
     private TimberShiftConfig.FastDecay config(int maxLeaves, int maxScanned, int radius) {
-        return new TimberShiftConfig.FastDecay(true, 10, 2, 32, maxLeaves, radius, maxScanned,
+        return new TimberShiftConfig.FastDecay(true, 10, 2, 2, 32, maxLeaves, radius, maxScanned,
                 32, true, new TimberShiftConfig.LeafEffects(true, false));
     }
 }

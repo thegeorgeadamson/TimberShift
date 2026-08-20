@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 
 public final class ConfigurationManager {
-    public static final int CURRENT_CONFIG_VERSION = 2;
+    public static final int CURRENT_CONFIG_VERSION = 3;
 
     private final JavaPlugin plugin;
     private final AtomicReference<TimberShiftConfig> active = new AtomicReference<>();
@@ -104,6 +104,7 @@ public final class ConfigurationManager {
                 booleanValue(yaml, "tree-detection.require-natural-leaves", true),
                 positiveInt(yaml, "tree-detection.minimum-natural-leaves", 4, 0, 512),
                 booleanValue(yaml, "tree-detection.allow-mixed-log-families", false),
+                booleanValue(yaml, "tree-detection.protect-player-placed-logs", true),
                 positiveInt(yaml, "tree-detection.max-break-height-above-base", 1, 0, 8),
                 positiveInt(yaml, "tree-detection.trusted-tree-seconds", 180, 10, 3600),
                 limits);
@@ -115,6 +116,7 @@ public final class ConfigurationManager {
                 booleanValue(yaml, "leaves.fast-decay.enabled", true),
                 positiveInt(yaml, "leaves.fast-decay.initial-delay-ticks", 10, 0, 1200),
                 positiveInt(yaml, "leaves.fast-decay.interval-ticks", 2, 1, 200),
+                positiveInt(yaml, "leaves.fast-decay.leaves-per-step", 2, 1, 32),
                 positiveInt(yaml, "leaves.fast-decay.max-leaves-per-batch", 32, 1, 256),
                 positiveInt(yaml, "leaves.fast-decay.max-leaves-per-tree", 512, 16, 4096),
                 positiveInt(yaml, "leaves.fast-decay.max-radius", 12, 2, 32),

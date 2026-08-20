@@ -5,6 +5,8 @@ import io.github.georgetimbershift.timbershift.model.BlockPos;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public final class LeafDecayQueue {
@@ -38,6 +40,20 @@ public final class LeafDecayQueue {
             operations.addLast(operation);
         }
         return null;
+    }
+
+    List<LeafDecayOperation> pollReadyRound(long currentTick) {
+        int attempts = operations.size();
+        List<LeafDecayOperation> ready = new ArrayList<>(attempts);
+        while (attempts-- > 0) {
+            LeafDecayOperation operation = operations.removeFirst();
+            if (operation.readyAtTick() <= currentTick) {
+                ready.add(operation);
+            } else {
+                operations.addLast(operation);
+            }
+        }
+        return ready;
     }
 
     void requeue(LeafDecayOperation operation) {
