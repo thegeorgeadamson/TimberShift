@@ -4,8 +4,8 @@
 
 **Progressive tree chopping for Minecraft servers.**
 
-[![Minecraft 26.2](https://img.shields.io/badge/Minecraft-26.2-62b47a?style=flat-square)](#requirements)
-[![Java 25](https://img.shields.io/badge/Java-25-e76f00?style=flat-square)](#requirements)
+[![Minecraft 1.20.6–26.3](https://img.shields.io/badge/Minecraft-1.20.6%E2%80%9326.3-62b47a?style=flat-square)](#requirements)
+[![Java 21+](https://img.shields.io/badge/Java-21%2B-e76f00?style=flat-square)](#requirements)
 [![Latest release](https://img.shields.io/github/v/release/thegeorgeadamson/TimberShift?style=flat-square&label=release)](https://github.com/thegeorgeadamson/TimberShift/releases/latest)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue?style=flat-square)](LICENSE)
 
@@ -22,20 +22,21 @@ Minecraft.
 
 ## Requirements
 
-- Minecraft Java Edition 26.2
-- Java 25
-- Paper 26.2, Purpur 26.2, or Spigot 26.2
+- Minecraft Java Edition 1.20.6 through 26.3
+- Java 21 or newer (Java 25 is required by 26.1+ servers)
+- Paper, Purpur, or Spigot
 
-Paper and Purpur are the primary targets. TimberShift is compiled against the common Spigot API and
-does not use NMS, CraftBukkit internals, or a server-specific plugin loader.
+Paper and Purpur are the primary targets. TimberShift is compiled against the 1.20.6 common Spigot API
+and does not use NMS, CraftBukkit internals, or a server-specific plugin loader. Newer tree materials
+are resolved by name at runtime, so the same JAR supports pale oak and poplar (red, orange, and yellow
+leaves) on servers where those materials exist without trying to load them on older servers.
 
-The current build is deliberately targeted at Minecraft 26.2. If you need another Minecraft version,
-[ask in the support server](https://discord.gg/VmQAzmYyvA); support for other versions can be considered
-on request where the server APIs allow it.
+Folia is not currently supported. Its region scheduler requires a separate execution path rather than
+being safely covered by ordinary Bukkit compatibility.
 
 ## Installation
 
-1. Download `TimberShift-1.2.1.jar` from the [latest release](../../releases/latest).
+1. Download the TimberShift JAR from the [latest release](../../releases/latest).
 2. Stop the server and place the JAR in its `plugins` directory.
 3. Start the server. TimberShift will create `plugins/TimberShift/config.yml`.
 
@@ -142,13 +143,17 @@ cleared when the configuration is reloaded.
 
 ## Building
 
-The repository includes a pinned Gradle wrapper. With JDK 25 available:
+The repository includes a pinned Gradle wrapper. Install JDK 21 for the build toolchain (26.1+ servers
+still require Java 25):
 
 ```bash
 ./gradlew clean build
 ```
 
-The plugin JAR is written to `build/libs/TimberShift-1.2.1.jar`.
+The plugin JAR is written to `build/libs/TimberShift-1.3.0.jar`.
+
+See the [1.3.0 validation notes](docs/VALIDATION_1.3.0.md) for tested server builds and remaining manual
+integration checks.
 
 ## Reporting a problem
 

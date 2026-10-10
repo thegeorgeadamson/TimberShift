@@ -35,7 +35,9 @@ public final class BukkitLeafWorld implements LeafWorld {
                     ? LeafCellSnapshot.persistentLeaf(family, leaves.getDistance())
                     : LeafCellSnapshot.naturalLeaf(family, leaves.getDistance());
         }
-        if (Tag.PREVENTS_NEARBY_LEAF_DECAY.isTagged(block.getType())) {
+        // LOGS exists at the compatibility floor and is populated by each running server, so it
+        // also contains newer supports such as pale oak when TimberShift runs on a newer version.
+        if (Tag.LOGS.isTagged(block.getType())) {
             return LeafCellSnapshot.support();
         }
         return LeafCellSnapshot.other();

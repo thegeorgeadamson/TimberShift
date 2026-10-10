@@ -44,54 +44,49 @@ public final class MaterialClassifier {
     );
 
     public boolean isAxe(ItemStack item) {
-        return item != null && Tag.ITEMS_AXES.isTagged(item.getType());
+        // Name matching keeps axes introduced after our minimum API (for example copper axes)
+        // usable without linking TimberShift to their newer Material enum constants.
+        return item != null && item.getType().name().endsWith("_AXE");
     }
 
     public LogFamily logFamily(Material material) {
-        if (!Tag.OVERWORLD_NATURAL_LOGS.isTagged(material)) {
-            return null;
-        }
-        if (Tag.OAK_LOGS.isTagged(material)) {
-            return LogFamily.OAK;
-        }
-        if (Tag.SPRUCE_LOGS.isTagged(material)) {
-            return LogFamily.SPRUCE;
-        }
-        if (Tag.BIRCH_LOGS.isTagged(material)) {
-            return LogFamily.BIRCH;
-        }
-        if (Tag.JUNGLE_LOGS.isTagged(material)) {
-            return LogFamily.JUNGLE;
-        }
-        if (Tag.ACACIA_LOGS.isTagged(material)) {
-            return LogFamily.ACACIA;
-        }
-        if (Tag.DARK_OAK_LOGS.isTagged(material)) {
-            return LogFamily.DARK_OAK;
-        }
-        if (Tag.MANGROVE_LOGS.isTagged(material)) {
-            return LogFamily.MANGROVE;
-        }
-        if (Tag.CHERRY_LOGS.isTagged(material)) {
-            return LogFamily.CHERRY;
-        }
-        if (Tag.PALE_OAK_LOGS.isTagged(material)) {
-            return LogFamily.PALE_OAK;
-        }
-        return null;
+        // Deliberately accept natural LOG blocks, not player-oriented WOOD or stripped variants.
+        // Using names lets a Java 21 / 1.20.6 build recognize newer woods on servers that provide them.
+        return logFamilyName(material.name());
+    }
+
+    static LogFamily logFamilyName(String materialName) {
+        return switch (materialName) {
+            case "OAK_LOG" -> LogFamily.OAK;
+            case "SPRUCE_LOG" -> LogFamily.SPRUCE;
+            case "BIRCH_LOG" -> LogFamily.BIRCH;
+            case "JUNGLE_LOG" -> LogFamily.JUNGLE;
+            case "ACACIA_LOG" -> LogFamily.ACACIA;
+            case "DARK_OAK_LOG" -> LogFamily.DARK_OAK;
+            case "MANGROVE_LOG" -> LogFamily.MANGROVE;
+            case "CHERRY_LOG" -> LogFamily.CHERRY;
+            case "PALE_OAK_LOG" -> LogFamily.PALE_OAK;
+            case "POPLAR_LOG" -> LogFamily.POPLAR;
+            default -> null;
+        };
     }
 
     public LogFamily leafFamily(Material material) {
-        return switch (material) {
-            case OAK_LEAVES, AZALEA_LEAVES, FLOWERING_AZALEA_LEAVES -> LogFamily.OAK;
-            case SPRUCE_LEAVES -> LogFamily.SPRUCE;
-            case BIRCH_LEAVES -> LogFamily.BIRCH;
-            case JUNGLE_LEAVES -> LogFamily.JUNGLE;
-            case ACACIA_LEAVES -> LogFamily.ACACIA;
-            case DARK_OAK_LEAVES -> LogFamily.DARK_OAK;
-            case MANGROVE_LEAVES -> LogFamily.MANGROVE;
-            case CHERRY_LEAVES -> LogFamily.CHERRY;
-            case PALE_OAK_LEAVES -> LogFamily.PALE_OAK;
+        return leafFamilyName(material.name());
+    }
+
+    static LogFamily leafFamilyName(String materialName) {
+        return switch (materialName) {
+            case "OAK_LEAVES", "AZALEA_LEAVES", "FLOWERING_AZALEA_LEAVES" -> LogFamily.OAK;
+            case "SPRUCE_LEAVES" -> LogFamily.SPRUCE;
+            case "BIRCH_LEAVES" -> LogFamily.BIRCH;
+            case "JUNGLE_LEAVES" -> LogFamily.JUNGLE;
+            case "ACACIA_LEAVES" -> LogFamily.ACACIA;
+            case "DARK_OAK_LEAVES" -> LogFamily.DARK_OAK;
+            case "MANGROVE_LEAVES" -> LogFamily.MANGROVE;
+            case "CHERRY_LEAVES" -> LogFamily.CHERRY;
+            case "PALE_OAK_LEAVES" -> LogFamily.PALE_OAK;
+            case "RED_POPLAR_LEAVES", "ORANGE_POPLAR_LEAVES", "YELLOW_POPLAR_LEAVES" -> LogFamily.POPLAR;
             default -> null;
         };
     }

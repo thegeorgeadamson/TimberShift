@@ -1,11 +1,28 @@
-# TimberShift 26.2 manual integration test plan
+# TimberShift manual integration test plan
 
-Run this checklist on a disposable Paper or Purpur 26.2 staging server with Java 25. Repeat the
-protection cases with the production server's actual protection configuration before deployment.
+Run the full checklist on a disposable current Paper or Purpur staging server. Repeat the protection
+cases with the production server's actual protection configuration before deployment.
+
+## Compatibility smoke matrix
+
+The plugin compiles against its oldest supported API, so every patch release does not need the full
+checklist. Before a release, run the preparation steps and the oak, version-specific wood, command,
+reload, restart, and leaf-decay cases on these representative boundaries:
+
+| Server | Java | Purpose |
+| --- | --- | --- |
+| Paper 1.20.6 | 21 | Oldest supported API and bytecode floor; pale oak is absent |
+| Paper 1.21.4 | 21 | Pale oak runtime discovery |
+| Paper 1.21.11 | 21 | Last pre-26.x release line |
+| Paper 26.2 | 25 | Previous 26.x boundary |
+| Paper 26.3 | 25 | Current API, poplar logs, and all three poplar leaf colors |
+
+Also perform a plugin-enable and basic oak smoke test on current Spigot and Purpur. Add another matrix
+entry only when Minecraft changes a Bukkit API TimberShift uses or introduces a new tree material.
 
 ## Preparation
 
-1. Run `./gradlew clean build` and copy `build/libs/TimberShift-1.2.1.jar` to `plugins/`.
+1. Run `./gradlew clean build` and copy the generated JAR from `build/libs/` to `plugins/`.
 2. Start the server, confirm TimberShift enables without warnings, and run `/timbershift status`.
 3. Keep `blocks-per-chop: 1`, enable debug logging for rejection diagnostics, and use a Survival axe
    unless a case says otherwise.
@@ -27,6 +44,14 @@ protection cases with the production server's actual protection configuration be
 - [ ] 10. Mangrove: verify roots and water are treated as collisions, never overwritten.
 - [ ] 11. Cherry: verify matching, non-persistent cherry leaves validate the tree.
 - [ ] 12. Pale oak: verify pale oak logs/leaves classify and shift correctly.
+
+On 26.3, also check:
+
+- [ ] Poplar with red, orange, and yellow natural leaves: each color validates the tree, logs shift,
+  axes remain intact, and unsupported leaves decay with vanilla drops.
+- [ ] Player-placed poplar logs and persistent poplar leaves retain the same protections as older woods.
+- [ ] Fallen poplar trunks without natural foliage stay put; shelf mushrooms do not count as leaves.
+- [ ] Poplar wood and stripped poplar variants never initiate a shift.
 
 ## False positives and collisions
 

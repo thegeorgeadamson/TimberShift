@@ -9,5 +9,6 @@ public enum LogFamily {
     DARK_OAK,
     MANGROVE,
     CHERRY,
-    PALE_OAK
+    PALE_OAK,
+    POPLAR
 }
